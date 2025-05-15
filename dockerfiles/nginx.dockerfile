@@ -1,11 +1,8 @@
 FROM nginx:stable-alpine
 
-WORKDIR /etc/nginx/conf.d
+# Copiar configuración personalizada
+COPY dockerfiles/nginx/default.conf /etc/nginx/conf.d/default.conf
 
-COPY /nginx/default.conf .
-
-RUN mv default.conf default.conf
-
+# Establecer directorio de trabajo
 WORKDIR /var/www
 
-COPY . .

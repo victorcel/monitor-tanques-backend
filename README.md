@@ -16,41 +16,117 @@ Sistema de monitoreo de tanques en tiempo real desarrollado con Laravel 12 y PHP
 
 ## Requisitos
 
-- PHP 8.4 o superior
-- Composer 2.0 o superior
-- Base de datos compatible con Laravel (MySQL, PostgreSQL, SQLite)
-- Servidor web compatible con PHP 8.4
+- Docker y Docker Compose (para desarrollo y despliegue)
+- PHP 8.4 (solo para desarrollo local sin Docker)
+- Composer 2.0 o superior (solo para desarrollo local sin Docker)
 
-## Instalación
+## Instalación y Despliegue con Docker
 
-1. Clonar el repositorio:
+### Desarrollo Local
+
+1. **Clonar el repositorio**:
 ```bash
 git clone https://github.com/tu-usuario/monitor-tanques.git
 cd monitor-tanques
 ```
 
-2. Instalar dependencias:
-```bash
-composer install
-```
-
-3. Configurar el archivo .env:
+2. **Configurar el archivo .env**:
 ```bash
 cp .env.example .env
-php artisan key:generate
 ```
 
-4. Configurar la conexión a la base de datos en el archivo .env
+3. **Configurar las variables de entorno en .env**:
+```
+APP_PORT=80
+APP_USER=sammy
+APP_UID=1000
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE=monitor_tanques
+DB_USERNAME=monitor
+DB_PASSWORD=password
+```
 
-5. Ejecutar migraciones:
+4. **Iniciar los contenedores Docker**:
 ```bash
-php artisan migrate
+docker-compose up -d
 ```
 
-6. Iniciar el servidor de desarrollo:
+El comando anterior iniciará automáticamente:
+- Instalación de dependencias con Composer
+- Configuración de la base de datos
+- Ejecución de migraciones
+- Servidor web con Nginx y PHP-FPM
+
+5. **Generar la clave de la aplicación**:
 ```bash
-php artisan serve
+docker-compose exec app php artisan key:generate
 ```
+
+6. **Verificar la instalación**:
+Accede a [http://localhost](http://localhost) en tu navegador.
+
+### Despliegue en Producción
+
+1. **Clonar el repositorio en el servidor de producción**:
+```bash
+git clone https://github.com/tu-usuario/monitor-tanques.git
+cd monitor-tanques
+```
+
+2. **Configurar el archivo .env para producción**:
+```bash
+cp .env.example .env
+nano .env  # Editar con valores de producción
+```
+
+3. **Asegurar configuraciones de producción en .env**:
+```
+APP_ENV=production
+APP_DEBUG=false
+APP_PORT=80  # O el puerto que prefieras
+```
+
+4. **Desplegar con Docker Compose**:
+```bash
+docker-compose -f docker-compose.yml up -d
+```
+
+5. **Verificar el despliegue**:
+```bash
+docker-compose ps
+docker-compose logs app
+```
+
+### Comandos Docker Útiles
+
+- **Ver logs de los contenedores**:
+  ```bash
+  docker-compose logs -f           # Todos los logs
+  docker-compose logs -f app       # Solo logs de la aplicación
+  ```
+
+- **Ejecutar comandos Artisan**:
+  ```bash
+  docker-compose exec app php artisan list
+  docker-compose exec app php artisan migrate:fresh --seed
+  ```
+
+- **Acceder a la base de datos**:
+  ```bash
+  docker-compose exec db mysql -u${DB_USERNAME} -p${DB_PASSWORD} ${DB_DATABASE}
+  ```
+
+- **Reiniciar los servicios**:
+  ```bash
+  docker-compose restart
+  ```
+
+- **Detener los contenedores**:
+  ```bash
+  docker-compose down   # Detener contenedores
+  docker-compose down -v  # Detener contenedores y eliminar volúmenes
+  ```
 
 ## Estructura del Proyecto
 
@@ -91,12 +167,20 @@ app/
 | GET    | /api/tanks/{tankId}/readings/latest | Obtener la última lectura de un tanque |
 | GET    | /api/tanks/{tankId}/readings/date-range | Obtener lecturas en un rango de fechas |
 
+## Dockerfiles Optimizados
+
+El proyecto utiliza Docker con imágenes Alpine optimizadas para un despliegue eficiente:
+
+- **php.dockerfile**: Imagen PHP 8.4 FPM basada en Alpine con extensiones mínimas necesarias
+- **nginx.dockerfile**: Servidor web Nginx optimizado
+- **composer.dockerfile**: Imagen optimizada para instalar dependencias
+
 ## Ejemplos de Uso
 
 ### Registrar una Nueva Lectura
 
 ```bash
-curl -X POST http://localhost:8000/api/readings \
+curl -X POST http://localhost/api/readings \
   -H "Content-Type: application/json" \
   -d '{
     "tank_id": 1,
@@ -109,15 +193,15 @@ curl -X POST http://localhost:8000/api/readings \
 ### Obtener la Última Lectura de un Tanque
 
 ```bash
-curl -X GET http://localhost:8000/api/tanks/1/readings/latest
+curl -X GET http://localhost/api/tanks/1/readings/latest
 ```
 
 ## Pruebas
 
-Para ejecutar las pruebas unitarias:
+Para ejecutar las pruebas dentro del contenedor Docker:
 
 ```bash
-php artisan test
+docker-compose exec app php artisan test
 ```
 
 ## Contribuir
@@ -134,6 +218,6 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo LICENSE par
 
 ## Contacto
 
-Nombre - Victor Elias Barrera Florez - vbarrera@outlook.com
+Nombre - [@tu_twitter](https://twitter.com/tu_twitter) - email@ejemplo.com
 
-Link del proyecto: [https://github.com/victorcel/monitor-tanques-backend](https://github.com/victorcel/monitor-tanques-backend)
+Link del proyecto: [https://github.com/tu-usuario/monitor-tanques](https://github.com/tu-usuario/monitor-tanques)

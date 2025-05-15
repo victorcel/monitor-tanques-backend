@@ -1,16 +1,8 @@
-FROM composer:2.8.8
+FROM composer:2.6
 
-# Install the required PHP extensions
-RUN apk add --no-cache $PHPIZE_DEPS \
-    && apk del --purge $PHPIZE_DEPS \
-    && apk add --no-cache libpng libpng-dev \
-    && docker-php-ext-install gd \
-    && apk del libpng-dev
-
-RUN addgroup -g 1000 laravel && adduser -G laravel -g laravel -s /bin/sh -D laravel
-
-USER laravel
-
+# Reduciendo capas innecesarias
 WORKDIR /var/www
 
-ENTRYPOINT [ "composer","install" ]
+# Entrypoint más flexible para permitir otros comandos además de install
+ENTRYPOINT ["composer"]
+CMD ["install", "--no-interaction", "--optimize-autoloader"]

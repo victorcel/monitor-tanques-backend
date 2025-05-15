@@ -1,51 +1,57 @@
 services:
+    # Servicio web con Nginx
     nginx:
         build:
-            context: ./dockerfiles
-            dockerfile: nginx.dockerfile
+            context: .
+            dockerfile: dockerfiles/nginx.dockerfile
         container_name: monitor-nginx
         restart: unless-stopped
         ports:
-            - "80:80"
+            - "${APP_PORT:-80}:80"
         volumes:
             - ./:/var/www
-            - ./dockerfiles/nginx:/etc/nginx/conf.d
-            - /var/log/nginx:/var/log/nginx
+            - ./storage/logs/nginx:/var/log/nginx
         depends_on:
             - app
         networks:
             - monitor-tanques-network
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+
+    # Servicio principal PHP-FPM
     app:
         build:
             args:
-                user: sammy
-                uid: 1000
-            context: ./dockerfiles
-            dockerfile: php.dockerfile
+                user: "${APP_USER:-sammy}"
+                uid: "${APP_UID:-1000}"
+            context: .
+            dockerfile: dockerfiles/php.dockerfile
         container_name: monitor-app
         restart: unless-stopped
-        working_dir: /var/www/
+        working_dir: /var/www
         volumes:
             - ./:/var/www
         depends_on:
-            - mariadb
+            - db
+            - setup
         networks:
             - monitor-tanques-network
-    composer:
-        build:
-            context: ./dockerfiles
-            dockerfile: composer.dockerfile
-        container_name: monitor-composer
-        volumes:
-            - ./:/var/www
-        networks:
-            - monitor-tanques-network
-    mariadb:
-        image: mariadb:10.6
+        healthcheck:
+            test: ["CMD", "php", "-v"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+
+    # Servicio de base de datos
+    db:
+        image: mariadb:10.6-focal
         container_name: monitor-db
         restart: unless-stopped
         ports:
-            - "3306:3306"
+            - "${DB_PORT:-3306}:3306"
         environment:
             MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
             MYSQL_DATABASE: '${DB_DATABASE}'
@@ -55,30 +61,49 @@ services:
             - monitor-tanques-mariadb:/var/lib/mysql
         networks:
             - monitor-tanques-network
-    init-permissions:
-        container_name: monitor-init-permissions
-        image: alpine
-        volumes:
-            - .:/var/www
-        command: sh -c "mkdir /var/www/html/vendor && chmod -R 777 /var/www/html/vendor  && chmod -R 777 /var/www/html/storage && chmod -R 777 /var/www/html/bootstrap/cache && chown -R 1000:1000 /var/www/html/storage /var/www/html/bootstrap/cache"
-        depends_on:
-            - app
-    artisan:
-        container_name: monitor-artisan
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}"]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+
+    # Setup - contenedor para configuración inicial
+    setup:
         build:
-            args:
-                user: sammy
-                uid: 1000
-            context: ./dockerfiles
-            dockerfile: php.dockerfile
+            context: .
+            dockerfile: dockerfiles/composer.dockerfile
+        container_name: monitor-setup
         volumes:
-            - .:/var/www
-        working_dir: /var/www
-        depends_on:
-            - mariadb
-        command: sh -c "php artisan migrate --force"
+            - ./:/var/www
         networks:
             - monitor-tanques-network
+        depends_on:
+            db:
+                condition: service_healthy
+        entrypoint: ["/bin/sh", "-c"]
+        command: |
+            "composer install --no-interaction --optimize-autoloader && \
+            echo '✅ Dependencias instaladas correctamente'"
+
+    # Contenedor para ejecutar migraciones
+    migrate:
+        build:
+            args:
+                user: "${APP_USER:-sammy}"
+                uid: "${APP_UID:-1000}"
+            context: .
+            dockerfile: dockerfiles/php.dockerfile
+        container_name: monitor-migrate
+        volumes:
+            - ./:/var/www
+        working_dir: /var/www
+        depends_on:
+            - db
+            - setup
+        command: php artisan migrate --force
+        networks:
+            - monitor-tanques-network
+
 networks:
     monitor-tanques-network:
         driver: bridge
