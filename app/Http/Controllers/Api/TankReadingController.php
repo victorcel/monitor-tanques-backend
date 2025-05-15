@@ -8,8 +8,10 @@ use App\Application\UseCases\ListTankReadingsUseCase;
 use App\Application\UseCases\RegisterTankReadingUseCase;
 use App\Domain\Exceptions\TankNotFoundException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TankReadingBatchRequest;
+use App\Http\Requests\TankReadingDateRangeRequest;
+use App\Http\Requests\TankReadingStoreRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use DateTime;
 
@@ -36,15 +38,9 @@ class TankReadingController extends Controller
     /**
      * Registrar una nueva lectura IoT
      */
-    public function store(Request $request, RegisterTankReadingUseCase $registerTankReadingUseCase): JsonResponse
+    public function store(TankReadingStoreRequest $request, RegisterTankReadingUseCase $registerTankReadingUseCase): JsonResponse
     {
-        $validated = $request->validate([
-            'tank_id' => 'required|integer|exists:tanks,id',
-            'liquid_level' => 'required|numeric|min:0',
-            'temperature' => 'nullable|numeric',
-            'reading_timestamp' => 'nullable|date',
-            'raw_data' => 'nullable|array',
-        ]);
+        $validated = $request->validated();
         
         try {
             $dto = CreateTankReadingDTO::fromArray($validated);
@@ -88,12 +84,9 @@ class TankReadingController extends Controller
     /**
      * Obtener lecturas por rango de fechas
      */
-    public function getByDateRange(int $tankId, Request $request, ListTankReadingsUseCase $listTankReadingsUseCase): JsonResponse
+    public function getByDateRange(int $tankId, TankReadingDateRangeRequest $request, ListTankReadingsUseCase $listTankReadingsUseCase): JsonResponse
     {
-        $validated = $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-        ]);
+        $validated = $request->validated();
         
         try {
             $startDate = new DateTime($validated['start_date']);
@@ -114,16 +107,9 @@ class TankReadingController extends Controller
     /**
      * Registrar múltiples lecturas en lote
      */
-    public function storeBatch(Request $request, RegisterTankReadingUseCase $registerTankReadingUseCase): JsonResponse
+    public function storeBatch(TankReadingBatchRequest $request, RegisterTankReadingUseCase $registerTankReadingUseCase): JsonResponse
     {
-        $validated = $request->validate([
-            'readings' => 'required|array|min:1',
-            'readings.*.tank_id' => 'required|integer|exists:tanks,id',
-            'readings.*.liquid_level' => 'required|numeric|min:0',
-            'readings.*.temperature' => 'nullable|numeric',
-            'readings.*.reading_timestamp' => 'nullable|date',
-            'readings.*.raw_data' => 'nullable|array',
-        ]);
+        $validated = $request->validated();
         
         $results = [];
         $errors = [];

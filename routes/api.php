@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\Route;
 Route::apiResource('tanks', TankController::class);
 
 // Rutas para lecturas de tanques
-Route::post('readings', [TankReadingController::class, 'store'])
+Route::post('tank-readings', [TankReadingController::class, 'store'])
     ->name('readings.store');
-Route::post('readings/batch', [TankReadingController::class, 'storeBatch'])
+Route::post('tank-readings/batch', [TankReadingController::class, 'storeBatch'])
     ->name('readings.store.batch');
 Route::get('tanks/{tankId}/readings', [TankReadingController::class, 'index'])
     ->name('tanks.readings.index');

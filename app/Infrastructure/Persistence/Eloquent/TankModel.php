@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class TankModel extends Model
 {
-    use HasUuids;
-    
+
+
     /**
      * The table associated with the model.
      *
@@ -22,11 +22,25 @@ class TankModel extends Model
      * @var array<string>
      */
     protected $fillable = [
-        'id',
         'name',
         'capacity',
-        'current_level',
         'location',
+        'serial_number',
+        'height',
+        'diameter',
+        'is_active'
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'capacity' => 'float',
+        'height' => 'float',
+        'diameter' => 'float',
+        'is_active' => 'boolean',
     ];
 
     /**

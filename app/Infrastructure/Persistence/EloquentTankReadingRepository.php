@@ -14,6 +14,9 @@ class EloquentTankReadingRepository implements TankReadingRepositoryInterface
      */
     private function toDomainModel(EloquentTankReading $eloquentModel): DomainTankReading
     {
+        // Convertir raw_data de string JSON a array si no es nulo
+        $rawData = $eloquentModel->raw_data ? json_decode($eloquentModel->raw_data, true) : null;
+        
         return new DomainTankReading(
             $eloquentModel->id,
             $eloquentModel->tank_id,
@@ -22,7 +25,7 @@ class EloquentTankReadingRepository implements TankReadingRepositoryInterface
             $eloquentModel->percentage,
             new DateTime($eloquentModel->reading_timestamp),
             $eloquentModel->temperature,
-            $eloquentModel->raw_data,
+            $rawData,
             new DateTime($eloquentModel->created_at),
             new DateTime($eloquentModel->updated_at)
         );
@@ -66,7 +69,9 @@ class EloquentTankReadingRepository implements TankReadingRepositoryInterface
         $eloquentReading->percentage = $reading->getPercentage();
         $eloquentReading->temperature = $reading->getTemperature();
         $eloquentReading->reading_timestamp = $reading->getReadingTimestamp()->format('Y-m-d H:i:s');
-        $eloquentReading->raw_data = $reading->getRawData();
+        
+        // Convertir raw_data de array a JSON string si no es nulo
+        $eloquentReading->raw_data = $reading->getRawData() ? json_encode($reading->getRawData()) : null;
         
         $eloquentReading->save();
         
