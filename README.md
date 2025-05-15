@@ -218,6 +218,6 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo LICENSE par
 
 ## Contacto
 
-Nombre - [@tu_twitter](https://twitter.com/tu_twitter) - email@ejemplo.com
+Nombre - Victor Elias Barrera Florez - vbarrera@outlook.com
 
-Link del proyecto: [https://github.com/tu-usuario/monitor-tanques](https://github.com/tu-usuario/monitor-tanques)
+Link del proyecto: [https://github.com/victorcel/monitor-tanques-backend](https://github.com/victorcel/monitor-tanques-backend)
