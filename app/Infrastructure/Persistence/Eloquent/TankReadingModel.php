@@ -7,8 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TankReadingModel extends Model
 {
-    use HasUuids;
-    
+
     /**
      * The table associated with the model.
      *
@@ -22,10 +21,13 @@ class TankReadingModel extends Model
      * @var array<string>
      */
     protected $fillable = [
-        'id',
         'tank_id',
         'liquid_level',
+        'volume',
+        'percentage',
         'reading_timestamp',
+        'temperature',
+        'raw_data'
     ];
 
     /**
@@ -35,7 +37,11 @@ class TankReadingModel extends Model
      */
     protected $casts = [
         'liquid_level' => 'float',
+        'volume' => 'float',
+        'percentage' => 'float',
         'reading_timestamp' => 'datetime',
+        'temperature' => 'float',
+        'raw_data' => 'json'
     ];
 
     /**
