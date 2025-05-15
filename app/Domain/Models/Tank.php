@@ -2,66 +2,155 @@
 
 namespace App\Domain\Models;
 
-use App\Domain\ValueObjects\LiquidLevel;
+use DateTime;
 
 class Tank
 {
-    private string $id;
+    private int $id;
     private string $name;
-    private float $capacity;
-    private ?LiquidLevel $currentLevel;
     private ?string $location;
+    private float $capacity;
+    private string $serialNumber;
+    private float $height;
+    private ?float $diameter;
+    private bool $isActive;
+    private DateTime $createdAt;
+    private DateTime $updatedAt;
 
     public function __construct(
-        string $id,
+        int $id,
         string $name,
+        string $serialNumber,
         float $capacity,
-        ?LiquidLevel $currentLevel = null,
-        ?string $location = null
+        float $height,
+        ?string $location = null,
+        ?float $diameter = null,
+        bool $isActive = true,
+        ?DateTime $createdAt = null,
+        ?DateTime $updatedAt = null
     ) {
         $this->id = $id;
         $this->name = $name;
-        $this->capacity = $capacity;
-        $this->currentLevel = $currentLevel;
         $this->location = $location;
+        $this->capacity = $capacity;
+        $this->serialNumber = $serialNumber;
+        $this->height = $height;
+        $this->diameter = $diameter;
+        $this->isActive = $isActive;
+        $this->createdAt = $createdAt ?? new DateTime();
+        $this->updatedAt = $updatedAt ?? new DateTime();
     }
 
-    public function id(): string
+    public function getId(): int
     {
         return $this->id;
     }
 
-    public function name(): string
+    public function getName(): string
     {
         return $this->name;
     }
 
-    public function capacity(): float
-    {
-        return $this->capacity;
-    }
-
-    public function currentLevel(): ?LiquidLevel
-    {
-        return $this->currentLevel;
-    }
-
-    public function location(): ?string
+    public function getLocation(): ?string
     {
         return $this->location;
     }
 
-    public function updateLevel(LiquidLevel $level): void
+    public function getCapacity(): float
     {
-        $this->currentLevel = $level;
+        return $this->capacity;
     }
 
-    public function fillPercentage(): ?float
+    public function getSerialNumber(): string
     {
-        if ($this->currentLevel === null) {
-            return null;
-        }
+        return $this->serialNumber;
+    }
 
-        return ($this->currentLevel->value() / $this->capacity) * 100;
+    public function getHeight(): float
+    {
+        return $this->height;
+    }
+
+    public function getDiameter(): ?float
+    {
+        return $this->diameter;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getCreatedAt(): DateTime
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): DateTime
+    {
+        return $this->updatedAt;
+    }
+
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+        $this->markAsUpdated();
+    }
+
+    public function setLocation(?string $location): void
+    {
+        $this->location = $location;
+        $this->markAsUpdated();
+    }
+
+    public function setCapacity(float $capacity): void
+    {
+        $this->capacity = $capacity;
+        $this->markAsUpdated();
+    }
+
+    public function setHeight(float $height): void
+    {
+        $this->height = $height;
+        $this->markAsUpdated();
+    }
+
+    public function setDiameter(?float $diameter): void
+    {
+        $this->diameter = $diameter;
+        $this->markAsUpdated();
+    }
+
+    public function activate(): void
+    {
+        $this->isActive = true;
+        $this->markAsUpdated();
+    }
+
+    public function deactivate(): void
+    {
+        $this->isActive = false;
+        $this->markAsUpdated();
+    }
+
+    private function markAsUpdated(): void
+    {
+        $this->updatedAt = new DateTime();
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'location' => $this->location,
+            'capacity' => $this->capacity,
+            'serial_number' => $this->serialNumber,
+            'height' => $this->height,
+            'diameter' => $this->diameter,
+            'is_active' => $this->isActive,
+            'created_at' => $this->createdAt->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updatedAt->format('Y-m-d H:i:s'),
+        ];
     }
 }

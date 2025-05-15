@@ -1,61 +1,139 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<p align="center"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+# Sistema de Monitoreo de Tanques IoT
 
-## About Laravel
+## Acerca del Proyecto
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Sistema de monitoreo de tanques en tiempo real desarrollado con Laravel 12 y PHP 8.4, diseñado para recibir, procesar y visualizar datos de sensores IoT sobre niveles de líquido en tanques industriales.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Características Principales
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Arquitectura Hexagonal**: Implementación basada en Clean Code y principios SOLID.
+- **API RESTful**: Endpoints para integración con dispositivos IoT y aplicaciones cliente.
+- **Cálculo de Volumen**: Algoritmos para distintas geometrías de tanques (cilíndrico, rectangular, etc.).
+- **Escalable**: Diseñado para manejar grandes volúmenes de datos en tiempo real.
+- **Pruebas Unitarias**: Cobertura de tests para garantizar la calidad del código.
 
-## Learning Laravel
+## Requisitos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP 8.4 o superior
+- Composer 2.0 o superior
+- Base de datos compatible con Laravel (MySQL, PostgreSQL, SQLite)
+- Servidor web compatible con PHP 8.4
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Instalación
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+1. Clonar el repositorio:
+```bash
+git clone https://github.com/tu-usuario/monitor-tanques.git
+cd monitor-tanques
+```
 
-## Laravel Sponsors
+2. Instalar dependencias:
+```bash
+composer install
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+3. Configurar el archivo .env:
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-### Premium Partners
+4. Configurar la conexión a la base de datos en el archivo .env
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+5. Ejecutar migraciones:
+```bash
+php artisan migrate
+```
 
-## Contributing
+6. Iniciar el servidor de desarrollo:
+```bash
+php artisan serve
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Estructura del Proyecto
 
-## Code of Conduct
+El proyecto sigue una arquitectura hexagonal (puertos y adaptadores) que separa claramente las preocupaciones:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```
+app/
+├─ Application/         # Capa de aplicación (casos de uso, DTOs)
+├─ Domain/              # Capa de dominio (modelos, interfaces, servicios)
+└─ Infrastructure/      # Capa de infraestructura (implementaciones)
+```
 
-## Security Vulnerabilities
+### Capas Principales
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- **Dominio**: Contiene la lógica de negocio central y es independiente de cualquier infraestructura.
+- **Aplicación**: Orquesta el flujo de datos entre el dominio y la infraestructura mediante casos de uso.
+- **Infraestructura**: Proporciona implementaciones concretas para las interfaces del dominio.
 
-## License
+## API Endpoints
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Tanques
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET    | /api/tanks | Listar todos los tanques |
+| POST   | /api/tanks | Crear un nuevo tanque |
+| GET    | /api/tanks/{id} | Obtener un tanque específico |
+| PUT    | /api/tanks/{id} | Actualizar un tanque |
+| DELETE | /api/tanks/{id} | Eliminar un tanque |
+
+### Lecturas de Tanques
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST   | /api/readings | Registrar una nueva lectura |
+| POST   | /api/readings/batch | Registrar múltiples lecturas en lote |
+| GET    | /api/tanks/{tankId}/readings | Obtener todas las lecturas de un tanque |
+| GET    | /api/tanks/{tankId}/readings/latest | Obtener la última lectura de un tanque |
+| GET    | /api/tanks/{tankId}/readings/date-range | Obtener lecturas en un rango de fechas |
+
+## Ejemplos de Uso
+
+### Registrar una Nueva Lectura
+
+```bash
+curl -X POST http://localhost:8000/api/readings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tank_id": 1,
+    "liquid_level": 75.5,
+    "temperature": 22.3,
+    "reading_timestamp": "2025-05-14T15:30:00"
+  }'
+```
+
+### Obtener la Última Lectura de un Tanque
+
+```bash
+curl -X GET http://localhost:8000/api/tanks/1/readings/latest
+```
+
+## Pruebas
+
+Para ejecutar las pruebas unitarias:
+
+```bash
+php artisan test
+```
+
+## Contribuir
+
+1. Fork el proyecto
+2. Crear una rama para tu función (`git checkout -b feature/nueva-funcion`)
+3. Commit tus cambios (`git commit -m 'Añadir nueva función'`)
+4. Push a la rama (`git push origin feature/nueva-funcion`)
+5. Abrir un Pull Request
+
+## Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT - ver el archivo LICENSE para más detalles.
+
+## Contacto
+
+Nombre - Victor Elias Barrera Florez - vbarrera@outlook.com
+
+Link del proyecto: [https://github.com/victorcel/monitor-tanques-backend](https://github.com/victorcel/monitor-tanques-backend)

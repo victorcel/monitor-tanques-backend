@@ -2,59 +2,78 @@
 
 namespace App\Application\UseCases;
 
-use App\Application\DTOs\TankReadingDTO;
+use App\Application\DTOs\CreateTankReadingDTO;
+use App\Domain\Models\Tank;
 use App\Domain\Models\TankReading;
 use App\Domain\Repositories\TankReadingRepositoryInterface;
 use App\Domain\Repositories\TankRepositoryInterface;
-use App\Domain\ValueObjects\LiquidLevel;
-use DateTimeImmutable;
-use Illuminate\Support\Str;
+use App\Domain\Exceptions\TankNotFoundException;
+use App\Domain\Services\VolumeCalculatorService;
 
 class RegisterTankReadingUseCase
 {
-    private TankReadingRepositoryInterface $tankReadingRepository;
     private TankRepositoryInterface $tankRepository;
+    private TankReadingRepositoryInterface $tankReadingRepository;
+    private VolumeCalculatorService $volumeCalculator;
 
     public function __construct(
+        TankRepositoryInterface $tankRepository,
         TankReadingRepositoryInterface $tankReadingRepository,
-        TankRepositoryInterface $tankRepository
+        VolumeCalculatorService $volumeCalculator
     ) {
-        $this->tankReadingRepository = $tankReadingRepository;
         $this->tankRepository = $tankRepository;
+        $this->tankReadingRepository = $tankReadingRepository;
+        $this->volumeCalculator = $volumeCalculator;
     }
 
-    public function execute(TankReadingDTO $dto): array
+    /**
+     * Registra una nueva lectura para un tanque.
+     * 
+     * @throws TankNotFoundException cuando el tanque no existe
+     */
+    public function execute(CreateTankReadingDTO $dto): TankReading
     {
         // Verificar que el tanque existe
-        $tank = $this->tankRepository->findById($dto->tankId);
-        if (!$tank) {
-            throw new \InvalidArgumentException("Tank with ID {$dto->tankId} not found");
-        }
-
-        // Crear un Value Object para el nivel de líquido
-        $liquidLevel = new LiquidLevel($dto->liquidLevel);
+        $tank = $this->tankRepository->findById($dto->getTankId());
         
-        // Crear una lectura de tanque
+        if (!$tank) {
+            throw new TankNotFoundException("Tanque con ID {$dto->getTankId()} no encontrado");
+        }
+        
+        // Calcular volumen y porcentaje
+        $volume = $this->calculateVolume($tank, $dto->getLiquidLevel());
+        $percentage = $this->calculatePercentage($volume, $tank->getCapacity());
+        
+        // Crear nueva lectura
         $reading = new TankReading(
-            Str::uuid()->toString(),
-            $dto->tankId,
-            $liquidLevel,
-            new DateTimeImmutable($dto->timestamp)
+            0, // ID temporal, será asignado por el repositorio
+            $dto->getTankId(),
+            $dto->getLiquidLevel(),
+            $volume,
+            $percentage,
+            $dto->getReadingTimestamp(),
+            $dto->getTemperature(),
+            $dto->getRawData()
         );
         
-        // Guardar la lectura
-        $this->tankReadingRepository->save($reading);
+        // Guardar y retornar lectura
+        return $this->tankReadingRepository->save($reading);
+    }
+    
+    private function calculateVolume(Tank $tank, float $liquidLevel): float
+    {
+        return $this->volumeCalculator->calculateVolume($tank, $liquidLevel);
+    }
+    
+    private function calculatePercentage(float $volume, float $capacity): float
+    {
+        if ($capacity <= 0) {
+            return 0;
+        }
         
-        // Actualizar el nivel actual del tanque
-        $tank->updateLevel($liquidLevel);
-        $this->tankRepository->update($tank);
+        $percentage = ($volume / $capacity) * 100;
         
-        return [
-            'id' => $reading->id(),
-            'tank_id' => $reading->tankId(),
-            'liquid_level' => $reading->level()->value(),
-            'timestamp' => $reading->timestamp()->format('Y-m-d H:i:s'),
-            'fill_percentage' => $tank->fillPercentage()
-        ];
+        // Limitar a rango 0-100
+        return max(0, min(100, $percentage));
     }
 }

@@ -12,21 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tank_readings', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('tank_id');
-            $table->float('liquid_level');
+            $table->id();
+            $table->foreignId('tank_id')->constrained()->onDelete('cascade');
+            $table->float('liquid_level')->comment('Nivel de líquido en centímetros');
+            $table->float('volume')->comment('Volumen calculado en litros');
+            $table->float('percentage')->comment('Porcentaje de llenado');
+            $table->float('temperature')->nullable()->comment('Temperatura en grados Celsius');
             $table->timestamp('reading_timestamp');
+            $table->json('raw_data')->nullable();
             $table->timestamps();
-            
-            $table->foreign('tank_id')
-                  ->references('id')
-                  ->on('tanks')
-                  ->onDelete('cascade');
-            
-            // Índice para búsquedas rápidas por tanque
-            $table->index('tank_id');
-            // Índice para búsquedas por timestamp
-            $table->index('reading_timestamp');
+
+            // Índice para mejorar rendimiento de consultas
+            $table->index(['tank_id', 'reading_timestamp']);
         });
     }
 

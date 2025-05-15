@@ -12,11 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tanks', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->string('name');
-            $table->float('capacity');
-            $table->float('current_level')->nullable();
             $table->string('location')->nullable();
+            $table->float('capacity')->comment('Capacidad en litros');
+            $table->string('serial_number')->unique();
+            $table->float('height')->comment('Altura en centímetros');
+            $table->float('diameter')->nullable()->comment('Diámetro en centímetros');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
