@@ -10,8 +10,9 @@ use App\Application\UseCases\ListTanksUseCase;
 use App\Application\UseCases\UpdateTankUseCase;
 use App\Domain\Exceptions\TankNotFoundException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TankStoreRequest;
+use App\Http\Requests\TankUpdateRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class TankController extends Controller
@@ -31,16 +32,9 @@ class TankController extends Controller
     /**
      * Crear un nuevo tanque
      */
-    public function store(Request $request, CreateTankUseCase $createTankUseCase): JsonResponse
+    public function store(TankStoreRequest $request, CreateTankUseCase $createTankUseCase): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'serial_number' => 'required|string|max:255|unique:tanks',
-            'capacity' => 'required|numeric|min:0',
-            'height' => 'required|numeric|min:0',
-            'location' => 'nullable|string|max:255',
-            'diameter' => 'nullable|numeric|min:0',
-        ]);
+        $validated = $request->validated();
         
         $dto = CreateTankDTO::fromArray($validated);
         $tank = $createTankUseCase->execute($dto);
@@ -72,16 +66,9 @@ class TankController extends Controller
     /**
      * Actualizar un tanque existente
      */
-    public function update(int $id, Request $request, UpdateTankUseCase $updateTankUseCase): JsonResponse
+    public function update(int $id, TankUpdateRequest $request, UpdateTankUseCase $updateTankUseCase): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'capacity' => 'sometimes|required|numeric|min:0',
-            'height' => 'sometimes|required|numeric|min:0',
-            'location' => 'nullable|string|max:255',
-            'diameter' => 'nullable|numeric|min:0',
-            'is_active' => 'sometimes|required|boolean',
-        ]);
+        $validated = $request->validated();
         
         try {
             $tank = $updateTankUseCase->execute($id, $validated);
