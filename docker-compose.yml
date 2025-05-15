@@ -16,7 +16,7 @@ services:
         networks:
             - monitor-tanques-network
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost"]
+            test: [ "CMD", "curl", "-f", "http://localhost" ]
             interval: 10s
             timeout: 5s
             retries: 3
@@ -40,7 +40,7 @@ services:
         networks:
             - monitor-tanques-network
         healthcheck:
-            test: ["CMD", "php", "-v"]
+            test: [ "CMD", "php", "-v" ]
             interval: 10s
             timeout: 5s
             retries: 3
@@ -62,7 +62,7 @@ services:
         networks:
             - monitor-tanques-network
         healthcheck:
-            test: ["CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}"]
+            test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
             interval: 10s
             timeout: 5s
             retries: 3
@@ -80,27 +80,34 @@ services:
         depends_on:
             db:
                 condition: service_healthy
-        entrypoint: ["/bin/sh", "-c"]
+        entrypoint: [ "/bin/sh", "-c" ]
         command: |
             "composer install --no-interaction --optimize-autoloader && \
             echo '✅ Dependencias instaladas correctamente'"
 
     # Contenedor para ejecutar migraciones
-    migrate:
+    migrate-optimize:
         build:
             args:
                 user: "${APP_USER:-sammy}"
                 uid: "${APP_UID:-1000}"
             context: .
             dockerfile: dockerfiles/php.dockerfile
-        container_name: monitor-migrate
+        container_name: monitor-migrate-optimize
         volumes:
             - ./:/var/www
         working_dir: /var/www
         depends_on:
             - db
             - setup
-        command: php artisan migrate --force
+        entrypoint: [ "/bin/sh", "-c" ]
+        command: |
+            "php artisan migrate --force && \
+                echo ✅ Migraciones ejecutadas correctamente && \
+             php artisan optimize:clear && \
+                echo ✅ Cache de configuración limpiado correctamente
+            "
+
         networks:
             - monitor-tanques-network
 
