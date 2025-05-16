@@ -2,10 +2,8 @@
 
 namespace Tests\Feature\Api;
 
-use App\Infrastructure\Persistence\Eloquent\TankModel;
-use App\Infrastructure\Persistence\Eloquent\TankReadingModel;
-use DateTime;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Infrastructure\Persistence\EloquentModels\Tank;
+use App\Infrastructure\Persistence\EloquentModels\TankReading;
 use Tests\TestCase;
 
 class TankReadingControllerTest extends TestCase
@@ -19,7 +17,7 @@ class TankReadingControllerTest extends TestCase
         parent::setUp();
 
         // Crear un tanque para usarlo en las pruebas
-        $this->tank = TankModel::create([
+        $this->tank = Tank::create([
             'name' => 'Tanque de Prueba',
             'serial_number' => 'SN-TEST-001',
             'capacity' => 1000.0,
@@ -33,7 +31,7 @@ class TankReadingControllerTest extends TestCase
     public function test_index_returns_all_readings_for_tank(): void
     {
         // Crear algunas lecturas para el tanque
-        TankReadingModel::create([
+        TankReading::create([
             'tank_id' => $this->tank->id,
             'liquid_level' => 50.5,
             'volume' => 500.5,
@@ -43,7 +41,7 @@ class TankReadingControllerTest extends TestCase
             'raw_data' => json_encode(['sensor' => 'A1', 'value' => '50.5'])
         ]);
 
-        TankReadingModel::create([
+        TankReading::create([
             'tank_id' => $this->tank->id,
             'liquid_level' => 60.0,
             'volume' => 600.0,
@@ -138,7 +136,7 @@ class TankReadingControllerTest extends TestCase
     public function test_latest_returns_most_recent_reading(): void
     {
         // Crear dos lecturas para el tanque con timestamps diferentes
-        TankReadingModel::create([
+        TankReading::create([
             'tank_id' => $this->tank->id,
             'liquid_level' => 50.5,
             'volume' => 500.5,
@@ -148,7 +146,7 @@ class TankReadingControllerTest extends TestCase
             'raw_data' => json_encode(['sensor' => 'A1', 'value' => '50.5'])
         ]);
 
-        $latestReading = TankReadingModel::create([
+        $latestReading = TankReading::create([
             'tank_id' => $this->tank->id,
             'liquid_level' => 60.0,
             'volume' => 600.0,
@@ -194,7 +192,7 @@ class TankReadingControllerTest extends TestCase
     public function test_get_by_date_range_returns_readings_in_range(): void
     {
         // Crear lecturas con diferentes fechas
-        TankReadingModel::create([
+        TankReading::create([
             'tank_id' => $this->tank->id,
             'liquid_level' => 50.5,
             'volume' => 500.5,
@@ -204,7 +202,7 @@ class TankReadingControllerTest extends TestCase
             'raw_data' => json_encode(['sensor' => 'A1', 'value' => '50.5'])
         ]);
 
-        TankReadingModel::create([
+        TankReading::create([
             'tank_id' => $this->tank->id,
             'liquid_level' => 60.0,
             'volume' => 600.0,
@@ -214,7 +212,7 @@ class TankReadingControllerTest extends TestCase
             'raw_data' => json_encode(['sensor' => 'A1', 'value' => '60.0'])
         ]);
 
-        TankReadingModel::create([
+        TankReading::create([
             'tank_id' => $this->tank->id,
             'liquid_level' => 70.0,
             'volume' => 700.0,

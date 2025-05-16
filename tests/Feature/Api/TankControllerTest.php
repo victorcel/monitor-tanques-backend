@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Api;
 
-use App\Infrastructure\Persistence\Eloquent\TankModel;
+use App\Infrastructure\Persistence\EloquentModels\Tank;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,7 +14,7 @@ class TankControllerTest extends TestCase
     public function test_index_returns_all_tanks(): void
     {
         // Crear algunos tanques de prueba
-        TankModel::create([
+        Tank::create([
             'name' => 'Tanque 1',
             'serial_number' => 'SN001',
             'capacity' => 1000.0,
@@ -24,7 +24,7 @@ class TankControllerTest extends TestCase
             'is_active' => true
         ]);
 
-        TankModel::create([
+        Tank::create([
             'name' => 'Tanque 2',
             'serial_number' => 'SN002',
             'capacity' => 2000.0,
@@ -95,7 +95,7 @@ class TankControllerTest extends TestCase
     public function test_show_returns_specific_tank(): void
     {
         // Crear un tanque de prueba
-        $tank = TankModel::create([
+        $tank = Tank::create([
             'name' => 'Tanque Individual',
             'serial_number' => 'SN004',
             'capacity' => 500.0,
@@ -129,7 +129,7 @@ class TankControllerTest extends TestCase
     public function test_update_modifies_tank(): void
     {
         // Crear un tanque de prueba
-        $tank = TankModel::create([
+        $tank = Tank::create([
             'name' => 'Tanque para Actualizar',
             'serial_number' => 'SN005',
             'capacity' => 800.0,
@@ -176,7 +176,7 @@ class TankControllerTest extends TestCase
     public function test_update_validates_input_data(): void
     {
         // Crear un tanque de prueba
-        $tank = TankModel::create([
+        $tank = Tank::create([
             'name' => 'Tanque para Validar',
             'serial_number' => 'SN006',
             'capacity' => 1000.0,
@@ -203,7 +203,7 @@ class TankControllerTest extends TestCase
     public function test_destroy_removes_tank(): void
     {
         // Crear un tanque de prueba
-        $tank = TankModel::create([
+        $tank = Tank::create([
             'name' => 'Tanque para Eliminar',
             'serial_number' => 'SN007',
             'capacity' => 600.0,

@@ -11,126 +11,309 @@ use App\Domain\Repositories\TankReadingRepositoryInterface;
 use App\Domain\Repositories\TankRepositoryInterface;
 use App\Domain\Services\VolumeCalculatorService;
 use DateTime;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
+use Mockery;
+use Mockery\MockInterface;
+use Tests\TestCase;
 
 class RegisterTankReadingUseCaseTest extends TestCase
 {
-    private TankRepositoryInterface|MockObject $tankRepository;
-    private TankReadingRepositoryInterface|MockObject $tankReadingRepository;
-    private VolumeCalculatorService|MockObject $volumeCalculator;
-    private RegisterTankReadingUseCase $useCase;
-
-    protected function setUp(): void
+    protected function tearDown(): void
     {
-        parent::setUp();
-        
-        // Crear mocks de las dependencias
-        $this->tankRepository = $this->createMock(TankRepositoryInterface::class);
-        $this->tankReadingRepository = $this->createMock(TankReadingRepositoryInterface::class);
-        $this->volumeCalculator = $this->createMock(VolumeCalculatorService::class);
-        
-        // Instanciar el caso de uso con las dependencias mockeadas
-        $this->useCase = new RegisterTankReadingUseCase(
-            $this->tankRepository,
-            $this->tankReadingRepository,
-            $this->volumeCalculator
-        );
+        Mockery::close();
+        parent::tearDown();
     }
 
-    public function test_register_tank_reading_successfully(): void
+    public function test_execute_registers_reading_successfully(): void
     {
-        // Preparar un DTO con los datos de entrada
-        $readingTimestamp = new DateTime();
-        $dto = new CreateTankReadingDTO(
-            1, // tank_id
-            75.5, // liquid_level
-            $readingTimestamp,
-            22.3, // temperature
-            ['raw' => 'data']
-        );
-
-        // Crear un tanque de prueba
+        // Arrange
+        $tankId = 1;
+        $liquidLevel = 150.0;
+        $temperature = 23.5;
+        $readingTimestamp = new DateTime('2025-05-15 10:00:00');
+        $rawData = ['sensor' => 'ultrasonic', 'battery' => '90%'];
+        
+        $calculatedVolume = 750.0;
+        $capacity = 1000.0;
+        $calculatedPercentage = 75.0;
+        
         $tank = new Tank(
-            1,
-            'Tanque 1',
-            'SN123',
-            1000, // capacity
-            100, // height
-            'Ubicación',
-            50, // diameter
-            true
+            $tankId, 
+            'Tanque 1', 
+            'SN-001', 
+            $capacity, 
+            200.0, 
+            'Ubicación 1', 
+            50.0, 
+            true, 
+            new DateTime(), 
+            new DateTime()
         );
-
-        // Configurar el comportamiento esperado de los mocks
-        $this->tankRepository->expects($this->once())
-            ->method('findById')
-            ->with(1)
-            ->willReturn($tank);
         
-        $this->volumeCalculator->expects($this->once())
-            ->method('calculateVolume')
-            ->with($tank, 75.5)
-            ->willReturn(750.0);
+        $savedReading = new TankReading(
+            1, 
+            $tankId, 
+            $liquidLevel, 
+            $calculatedVolume, 
+            $calculatedPercentage, 
+            $readingTimestamp, 
+            $temperature, 
+            $rawData, 
+            new DateTime(), 
+            new DateTime()
+        );
         
-        // Crear una lectura de prueba que simula la que se guardará
-        $expectedReading = new TankReading(
-            1, // id
-            1, // tank_id
-            75.5, // liquid_level
-            750.0, // volume
-            75.0, // percentage
+        $dto = new CreateTankReadingDTO(
+            $tankId,
+            $liquidLevel,
             $readingTimestamp,
-            22.3, // temperature
-            ['raw' => 'data']
+            $temperature,
+            $rawData
         );
         
-        // El repositorio debería guardar y devolver la lectura
-        $this->tankReadingRepository->expects($this->once())
-            ->method('save')
-            ->willReturn($expectedReading);
-
-        // Ejecutar el caso de uso
-        $result = $this->useCase->execute($dto);
+        $tankRepository = $this->mock(TankRepositoryInterface::class, function (MockInterface $mock) use ($tankId, $tank) {
+            $mock->shouldReceive('findById')
+                ->once()
+                ->with($tankId)
+                ->andReturn($tank);
+        });
         
-        // Verificar el resultado
+        $tankReadingRepository = $this->mock(TankReadingRepositoryInterface::class, function (MockInterface $mock) use ($savedReading) {
+            $mock->shouldReceive('save')
+                ->once()
+                ->with(Mockery::type(TankReading::class))
+                ->andReturn($savedReading);
+        });
+        
+        $volumeCalculator = $this->mock(VolumeCalculatorService::class, function (MockInterface $mock) use ($tank, $liquidLevel, $calculatedVolume) {
+            $mock->shouldReceive('calculateVolume')
+                ->once()
+                ->with($tank, $liquidLevel)
+                ->andReturn($calculatedVolume);
+        });
+        
+        $useCase = new RegisterTankReadingUseCase(
+            $tankRepository,
+            $tankReadingRepository,
+            $volumeCalculator
+        );
+
+        // Act
+        $result = $useCase->execute($dto);
+
+        // Assert
         $this->assertInstanceOf(TankReading::class, $result);
-        $this->assertEquals(1, $result->getId());
-        $this->assertEquals(1, $result->getTankId());
-        $this->assertEquals(75.5, $result->getLiquidLevel());
-        $this->assertEquals(750.0, $result->getVolume());
-        $this->assertEquals(75.0, $result->getPercentage());
+        $this->assertEquals($tankId, $result->getTankId());
+        $this->assertEquals($liquidLevel, $result->getLiquidLevel());
+        $this->assertEquals($calculatedVolume, $result->getVolume());
+        $this->assertEquals($calculatedPercentage, $result->getPercentage());
+        $this->assertEquals($temperature, $result->getTemperature());
+        $this->assertEquals($rawData, $result->getRawData());
         $this->assertEquals($readingTimestamp, $result->getReadingTimestamp());
-        $this->assertEquals(22.3, $result->getTemperature());
-        $this->assertEquals(['raw' => 'data'], $result->getRawData());
     }
 
-    public function test_throws_exception_when_tank_not_found(): void
+    public function test_execute_throws_exception_when_tank_not_found(): void
     {
-        // Preparar un DTO con los datos de entrada
+        // Arrange
+        $tankId = 999;
+        $liquidLevel = 150.0;
+        $readingTimestamp = new DateTime('2025-05-15 10:00:00');
+        $temperature = 23.5;
+        $rawData = ['sensor' => 'ultrasonic'];
+        
         $dto = new CreateTankReadingDTO(
-            999, // tank_id inexistente
-            75.5, // liquid_level
-            new DateTime(),
-            22.3, // temperature
-            ['raw' => 'data']
+            $tankId,
+            $liquidLevel,
+            $readingTimestamp,
+            $temperature,
+            $rawData
+        );
+        
+        $tankRepository = $this->mock(TankRepositoryInterface::class, function (MockInterface $mock) use ($tankId) {
+            $mock->shouldReceive('findById')
+                ->once()
+                ->with($tankId)
+                ->andReturnNull();
+        });
+        
+        $tankReadingRepository = $this->mock(TankReadingRepositoryInterface::class);
+        $volumeCalculator = $this->mock(VolumeCalculatorService::class);
+        
+        $useCase = new RegisterTankReadingUseCase(
+            $tankRepository,
+            $tankReadingRepository,
+            $volumeCalculator
         );
 
-        // El tank_id no existe
-        $this->tankRepository->expects($this->once())
-            ->method('findById')
-            ->with(999)
-            ->willReturn(null);
-        
-        // No deberían llamarse estos métodos
-        $this->volumeCalculator->expects($this->never())->method('calculateVolume');
-        $this->tankReadingRepository->expects($this->never())->method('save');
-
-        // Verificar que se lanza la excepción esperada
+        // Act & Assert
         $this->expectException(TankNotFoundException::class);
-        $this->expectExceptionMessage('Tanque con ID 999 no encontrado');
+        $this->expectExceptionMessage("Tanque con ID {$tankId} no encontrado");
         
-        // Ejecutar el caso de uso
-        $this->useCase->execute($dto);
+        $useCase->execute($dto);
+    }
+
+    public function test_calculate_percentage_handles_zero_capacity(): void
+    {
+        // Arrange
+        $tankId = 1;
+        $liquidLevel = 150.0;
+        $readingTimestamp = new DateTime('2025-05-15 10:00:00');
+        $temperature = 23.5;
+        $rawData = null;
+        
+        $calculatedVolume = 750.0;
+        $capacity = 0.0;  // Capacidad cero para probar división por cero
+        
+        $tank = new Tank(
+            $tankId, 
+            'Tanque Zero', 
+            'SN-ZERO', 
+            $capacity, 
+            200.0, 
+            'Ubicación Zero', 
+            50.0, 
+            true, 
+            new DateTime(), 
+            new DateTime()
+        );
+        
+        $savedReading = new TankReading(
+            1, 
+            $tankId, 
+            $liquidLevel, 
+            $calculatedVolume, 
+            0.0, // Esperamos 0% porque la capacidad es 0
+            $readingTimestamp, 
+            $temperature, 
+            $rawData, 
+            new DateTime(), 
+            new DateTime()
+        );
+        
+        $dto = new CreateTankReadingDTO(
+            $tankId,
+            $liquidLevel,
+            $readingTimestamp,
+            $temperature,
+            $rawData
+        );
+        
+        $tankRepository = $this->mock(TankRepositoryInterface::class, function (MockInterface $mock) use ($tankId, $tank) {
+            $mock->shouldReceive('findById')
+                ->once()
+                ->with($tankId)
+                ->andReturn($tank);
+        });
+        
+        $tankReadingRepository = $this->mock(TankReadingRepositoryInterface::class, function (MockInterface $mock) use ($savedReading) {
+            $mock->shouldReceive('save')
+                ->once()
+                ->with(Mockery::on(function($reading) {
+                    return $reading->getPercentage() === 0.0;
+                }))
+                ->andReturn($savedReading);
+        });
+        
+        $volumeCalculator = $this->mock(VolumeCalculatorService::class, function (MockInterface $mock) use ($tank, $liquidLevel, $calculatedVolume) {
+            $mock->shouldReceive('calculateVolume')
+                ->once()
+                ->with($tank, $liquidLevel)
+                ->andReturn($calculatedVolume);
+        });
+        
+        $useCase = new RegisterTankReadingUseCase(
+            $tankRepository,
+            $tankReadingRepository,
+            $volumeCalculator
+        );
+
+        // Act
+        $result = $useCase->execute($dto);
+
+        // Assert
+        $this->assertInstanceOf(TankReading::class, $result);
+        $this->assertEquals(0.0, $result->getPercentage());
+    }
+
+    public function test_calculate_percentage_limits_to_100_percent_max(): void
+    {
+        // Arrange
+        $tankId = 1;
+        $liquidLevel = 300.0;  // Nivel más alto de lo normal
+        $readingTimestamp = new DateTime('2025-05-15 10:00:00');
+        $temperature = 23.5;
+        $rawData = null;
+        
+        $calculatedVolume = 1500.0;  // Volumen que excede la capacidad
+        $capacity = 1000.0;
+        
+        $tank = new Tank(
+            $tankId, 
+            'Tanque Overflow', 
+            'SN-OVERFLOW', 
+            $capacity, 
+            200.0, 
+            'Ubicación Overflow', 
+            50.0, 
+            true, 
+            new DateTime(), 
+            new DateTime()
+        );
+        
+        $savedReading = new TankReading(
+            1, 
+            $tankId, 
+            $liquidLevel, 
+            $calculatedVolume, 
+            100.0, // Esperamos 100% máximo
+            $readingTimestamp, 
+            $temperature, 
+            $rawData, 
+            new DateTime(), 
+            new DateTime()
+        );
+        
+        $dto = new CreateTankReadingDTO(
+            $tankId,
+            $liquidLevel,
+            $readingTimestamp,
+            $temperature,
+            $rawData
+        );
+        
+        $tankRepository = $this->mock(TankRepositoryInterface::class, function (MockInterface $mock) use ($tankId, $tank) {
+            $mock->shouldReceive('findById')
+                ->once()
+                ->with($tankId)
+                ->andReturn($tank);
+        });
+        
+        $tankReadingRepository = $this->mock(TankReadingRepositoryInterface::class, function (MockInterface $mock) use ($savedReading) {
+            $mock->shouldReceive('save')
+                ->once()
+                ->with(Mockery::on(function($reading) {
+                    return $reading->getPercentage() === 100.0;
+                }))
+                ->andReturn($savedReading);
+        });
+        
+        $volumeCalculator = $this->mock(VolumeCalculatorService::class, function (MockInterface $mock) use ($tank, $liquidLevel, $calculatedVolume) {
+            $mock->shouldReceive('calculateVolume')
+                ->once()
+                ->with($tank, $liquidLevel)
+                ->andReturn($calculatedVolume);
+        });
+        
+        $useCase = new RegisterTankReadingUseCase(
+            $tankRepository,
+            $tankReadingRepository,
+            $volumeCalculator
+        );
+
+        // Act
+        $result = $useCase->execute($dto);
+
+        // Assert
+        $this->assertInstanceOf(TankReading::class, $result);
+        $this->assertEquals(100.0, $result->getPercentage());
     }
 }
